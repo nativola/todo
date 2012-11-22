@@ -5,6 +5,7 @@ FirstWeek::Application.routes.draw do
 
   root :to => 'users#index'
   
+  match 'users/get_user/:name' => 'users#get_user'
   # The priority is based upon order of creation:
   # first created -> highest priority.
 

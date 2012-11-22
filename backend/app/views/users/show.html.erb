@@ -10,7 +10,7 @@
 </p>
 
 <ul>
-  <% @user.tasks.each do |task|%>
+  <% @user.tasks.each do |task| %>
     <li><%= link_to task.name, task %></li>
   <% end %>
 </ul>

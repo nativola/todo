@@ -14,7 +14,7 @@ class TasksController < ApplicationController
   # GET /tasks/1.json
   def show
     @task = Task.find(params[:id])
-
+	
     respond_to do |format|
       format.html # show.html.erb
       format.json { render json: @task }
@@ -24,6 +24,7 @@ class TasksController < ApplicationController
   # GET /tasks/new
   # GET /tasks/new.json
   def new
+	@user = User.all
     @task = Task.new
 
     respond_to do |format|
@@ -34,6 +35,7 @@ class TasksController < ApplicationController
 
   # GET /tasks/1/edit
   def edit
+	@user = User.all
     @task = Task.find(params[:id])
   end
 
@@ -43,9 +45,10 @@ class TasksController < ApplicationController
     @task = Task.new(params[:task])
 
     respond_to do |format|
-      if @task.save
+      if @task.save!
         format.html { redirect_to @task, notice: 'Task was successfully created.' }
-        format.json { render json: @task, status: :created, location: @task }
+        #format.json { render json: @task, status: :created, location: @task }
+		format.json { head :no_content}
       else
         format.html { render action: "new" }
         format.json { render json: @task.errors, status: :unprocessable_entity }
