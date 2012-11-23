@@ -7,7 +7,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.web.todo.DataAccess;
+import com.web.todo.TaskAccess;
+import com.web.todo.UserAccess;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -18,11 +19,11 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -35,7 +36,6 @@ public class MainActivity extends Activity {
 	taskAdapter taskAdapter = null;
 	
 	ListView ma_lv;
-	Button ma_bn;
 	
 	private String user = "";
 	private String task = "";
@@ -51,11 +51,9 @@ public class MainActivity extends Activity {
         setContentView(R.layout.main_activity);
         ma_lv = (ListView)findViewById(R.id.ma_lv);
         ma_lv.setOnItemClickListener(taskClick);
-        ma_bn = (Button)findViewById(R.id.ma_bn);
-        ma_bn.setOnClickListener(newTask);
 	    Bundle extras = getIntent().getExtras();
         user = extras.getString("user");
-        new loadUserTasks().execute();
+        new readUserTasks().execute();
     }
     /*
      * (non-Javadoc)
@@ -68,13 +66,15 @@ public class MainActivity extends Activity {
         return true;
     }
     /*
-     * new task button event callback
+     * options menu items event callback
      */
-    private View.OnClickListener newTask = new View.OnClickListener() {
-		public void onClick(View v) {
-			new createUserTasks().execute();
+    @Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if (item.getTitle().toString().equals("Nueva tarea")) {
+			showDialog(3);
 		}
-	};
+		return true;
+	}
 	/*
 	 * tasks list click event callback
 	 */
@@ -92,6 +92,8 @@ public class MainActivity extends Activity {
 	protected Dialog onCreateDialog(int id) {
 		AlertDialog listOptions = null;
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		LayoutInflater factory = LayoutInflater.from(this);
+        final View textEntryView = factory.inflate(R.layout.custom_dialog, null);
 		switch(id) {
 		case 0:
 			final CharSequence[] options = {this.getString(R.string.update),this.getString(R.string.delete)};
@@ -113,16 +115,19 @@ public class MainActivity extends Activity {
 			listOptions = builder.create();
 			break;
 		case 1:
-			LayoutInflater factory = LayoutInflater.from(this);
-            final View textEntryView = factory.inflate(R.layout.update_task, null);
             builder.setTitle(R.string.title_update);
             builder.setView(textEntryView);
             builder.setPositiveButton(R.string.accept, new DialogInterface.OnClickListener() {
             	public void onClick(DialogInterface dialog, int item) {
-            		EditText ut_et = (EditText)textEntryView.findViewById(R.id.ut_et);
-            		sprt = ut_et.getText().toString();
-            		ut_et.setText("");
-            		new updateUserTasks().execute();
+            		EditText cd_et = (EditText)textEntryView.findViewById(R.id.cd_et);
+            		sprt = cd_et.getText().toString();
+            		cd_et.setText("");
+            		if(sprt.isEmpty()) {
+            			Toast.makeText(MainActivity.this, R.string.require_field, Toast.LENGTH_LONG).show();
+            		}
+            		else {
+            			new updateExistingTask().execute();
+            		}
             	}
             });
             builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
@@ -140,7 +145,7 @@ public class MainActivity extends Activity {
 			builder.setMessage(R.string.message_delete);
 			builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
 	           public void onClick(DialogInterface dialog, int id) {
-	        	   new deleteUserTasks().execute();
+	        	   new deleteExistingTask().execute();
 	           }
 		    });
 			builder.setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
@@ -152,26 +157,53 @@ public class MainActivity extends Activity {
 				}
 			});
 			listOptions = builder.create();
+			break;
+		case 3:
+			builder.setTitle(R.string.title_new);
+            builder.setView(textEntryView);
+            builder.setPositiveButton(R.string.accept, new DialogInterface.OnClickListener() {
+            	public void onClick(DialogInterface dialog, int item) {
+            		EditText cd_et = (EditText)textEntryView.findViewById(R.id.cd_et);
+            		sprt = cd_et.getText().toString();
+            		cd_et.setText("");
+            		if(sprt.isEmpty()) {
+            			Toast.makeText(MainActivity.this, R.string.require_field, Toast.LENGTH_LONG).show();
+            		}
+            		else {
+            			new createNewTask().execute();
+            		}
+            	}
+            });
+            builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            	public void onClick(DialogInterface dialog, int item) {
+            	}
+            });      
+            builder.setOnCancelListener(new DialogInterface.OnCancelListener() {
+				public void onCancel(DialogInterface dialog) {
+				}
+			});
+            listOptions = builder.create();
+			break;
 		}
 		return listOptions;
 	}
 	/*
 	 * star new async thread to create user task in server
 	 */
-	private class createUserTasks extends AsyncTask<Void, Void, Void> {
-		private ProgressDialog Dialog = new ProgressDialog(MainActivity.this);
-		EditText ma_et = (EditText)findViewById(R.id.ma_et);
+	private class createNewTask extends AsyncTask<Void, Void, Void> {
+		ProgressDialog Dialog = new ProgressDialog(MainActivity.this);
 		@Override
 		protected void onPreExecute() {
-			spprtModel.clear();
             Dialog.setMessage("Por favor espere");
             Dialog.show();
+            spprtModel.clear();
         }
 		@Override
 		protected Void doInBackground(Void... params) {
-			DataAccess oDA = new DataAccess();
-			oDA.createTask(ma_et.getText().toString(), user);
-			JSONArray jsonArray = oDA.readTasks(user);
+			TaskAccess oTA = new TaskAccess();
+			oTA.createNewTask(sprt, user);
+			UserAccess oUA = new UserAccess();
+			JSONArray jsonArray = oUA.readUserTasks(user);
 			JSONObject jsonObjet;
 			for(int i = jsonArray.length()-1; i >= 0; i--) {
 				try {
@@ -197,7 +229,6 @@ public class MainActivity extends Activity {
 				taskAdapter.add(oTask);
 				i++;			
 			}
-			ma_et.setText("");
 			Dialog.dismiss();
 			Toast.makeText(MainActivity.this, R.string.create_success, Toast.LENGTH_LONG).show();
 	    }
@@ -205,8 +236,8 @@ public class MainActivity extends Activity {
     /*
 	 * star new async thread to retrive the user task from server
 	 */
-	private class loadUserTasks extends AsyncTask<Void, Void, Void> {
-		private ProgressDialog Dialog = new ProgressDialog(MainActivity.this);
+	private class readUserTasks extends AsyncTask<Void, Void, Void> {
+		ProgressDialog Dialog = new ProgressDialog(MainActivity.this);
 		@Override
 		protected void onPreExecute() {
 			spprtModel.clear();
@@ -215,8 +246,8 @@ public class MainActivity extends Activity {
         }
 		@Override
 		protected Void doInBackground(Void... params) {
-			DataAccess oDA = new DataAccess();
-			JSONArray jsonArray = oDA.readTasks(user);
+			UserAccess oUA = new UserAccess();
+			JSONArray jsonArray = oUA.readUserTasks(user);
 			JSONObject jsonObjet;
 			for(int i = jsonArray.length()-1; i >= 0; i--) {
 				try {
@@ -248,8 +279,8 @@ public class MainActivity extends Activity {
 	/*
 	 * star new async thread to update a user task in server
 	 */
-	private class updateUserTasks extends AsyncTask<Void, Void, Void> {
-		private ProgressDialog Dialog = new ProgressDialog(MainActivity.this);
+	private class updateExistingTask extends AsyncTask<Void, Void, Void> {
+		ProgressDialog Dialog = new ProgressDialog(MainActivity.this);
 		@Override
 		protected void onPreExecute() {
 			spprtModel.clear();
@@ -258,9 +289,10 @@ public class MainActivity extends Activity {
         }
 		@Override
 		protected Void doInBackground(Void... params) {
-			DataAccess oDA = new DataAccess();
-			oDA.updateTask(sprt, task);
-			JSONArray jsonArray = oDA.readTasks(user);
+			TaskAccess oTA = new TaskAccess();
+			UserAccess oUA = new UserAccess();
+			oTA.updateExistingTask(sprt, task);
+			JSONArray jsonArray = oUA.readUserTasks(user);
 			JSONObject jsonObjet;
 			for(int i = jsonArray.length()-1; i >= 0; i--) {
 				try {
@@ -293,8 +325,8 @@ public class MainActivity extends Activity {
 	/*
 	 * star new async thread to delete the user task from server
 	 */
-	private class deleteUserTasks extends AsyncTask<Void, Void, Void> {
-		private ProgressDialog Dialog = new ProgressDialog(MainActivity.this);
+	private class deleteExistingTask extends AsyncTask<Void, Void, Void> {
+		ProgressDialog Dialog = new ProgressDialog(MainActivity.this);
 		@Override
 		protected void onPreExecute() {
 			spprtModel.clear();
@@ -303,9 +335,10 @@ public class MainActivity extends Activity {
         }
 		@Override
 		protected Void doInBackground(Void... params) {
-			DataAccess oDA = new DataAccess();
-			oDA.deleteTask(task);
-			JSONArray jsonArray = oDA.readTasks(user);
+			TaskAccess oTA = new TaskAccess();
+			UserAccess oUA = new UserAccess();
+			oTA.deleteExistingTask(task);
+			JSONArray jsonArray = oUA.readUserTasks(user);
 			JSONObject jsonObjet;
 			for(int i = jsonArray.length()-1; i >= 0; i--) {
 				try {

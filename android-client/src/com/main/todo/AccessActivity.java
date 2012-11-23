@@ -9,19 +9,17 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.web.todo.DataAccess;
+import com.web.todo.UserAccess;
 
 public class AccessActivity extends Activity {
 
 	Button aa_bn;
 	
-	private boolean access = false;
 	private String user = "";
 	
 	/*
@@ -37,16 +35,6 @@ public class AccessActivity extends Activity {
         aa_bn.setOnClickListener(newTask);
     }
     /*
-     * (non-Javadoc)
-     * @see android.app.Activity#onCreateOptionsMenu(android.view.Menu)
-     * app options menu creation callback
-     */
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_activity, menu);
-        return true;
-    }
-    /*
      * new task button event callback
      */
     private View.OnClickListener newTask = new View.OnClickListener() {
@@ -58,17 +46,28 @@ public class AccessActivity extends Activity {
 	 * star new async thread to validate the user
 	 */
 	private class accessUser extends AsyncTask<Void, Void, Void> {
-		private ProgressDialog Dialog = new ProgressDialog(AccessActivity.this);
+		ProgressDialog Dialog = new ProgressDialog(AccessActivity.this);
+		EditText aa_et = (EditText)findViewById(R.id.aa_et);
+		int access = 0;
 		@Override
 		protected void onPreExecute() {
             Dialog.setMessage("Por favor espere");
             Dialog.show();
+			if(aa_et.getText().toString().isEmpty()) {
+				access = 1;
+			}
         }
 		@Override
 		protected Void doInBackground(Void... params) {
-			EditText aa_et = (EditText)findViewById(R.id.aa_et);
-			DataAccess oDA = new DataAccess();
-			JSONArray jsonArray = oDA.validateUser(aa_et.getText().toString());
+			if(access != 0) {
+				return null;
+			}
+			UserAccess oUA = new UserAccess();
+			JSONArray jsonArray = oUA.validateUser(aa_et.getText().toString());
+			if(jsonArray.length() <= 0) {
+				access = 2;
+				return null;
+			}
 			JSONObject jsonObjet;
 			for(int i = jsonArray.length()-1; i >= 0; i--) {
 				try {
@@ -76,21 +75,24 @@ public class AccessActivity extends Activity {
 					user = jsonObjet.getString("id");
 				}
 				catch(JSONException e) {}
-				access = true;
 			}
 			return null;
 		}
 		@Override
 		protected void onPostExecute(Void result) {
-			if(access) {
+			if(access == 0) {
 				Intent main = new Intent(AccessActivity.this, MainActivity.class);
 				main.putExtra("user", user);
 				startActivity(main);
 				finish();
 			}
-			else {
+			else if(access == 1) {
 				TextView aa_tv = (TextView)findViewById(R.id.aa_tv);
-				aa_tv.setText(R.string.invalid_access);
+				aa_tv.setText(R.string.required_user);
+			}
+			else if(access == 2) {
+				TextView aa_tv = (TextView)findViewById(R.id.aa_tv);
+				aa_tv.setText(R.string.inexist_user);
 			}
 			Dialog.dismiss();
 		}

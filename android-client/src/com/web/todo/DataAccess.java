@@ -22,61 +22,10 @@ public class DataAccess {
 	private String url = "http://192.168.2.115:3000/";
 
 	public DataAccess() {}
-	
-	/*
-	 * validate user exist
-	 */
-	public JSONArray validateUser(String user) {
-		String params = "users/get_user/" + user + ".json";
-		return getService(params);
-	}
-	/*
-	 * create a new task
-	 */
-	public void createTask(String task, String user) {
-		JSONObject a = new JSONObject();
-		JSONObject tasks = new JSONObject();
-		try {
-			a.put("name", task);
-			a.put("user_id", user);
-			tasks.put("task", a);
-		}
-		catch(JSONException e) {}
-		String address = "tasks.json";
-		postService(address, tasks);
-	}
-	/*
-	 * read all user tasks
-	 */
-	public JSONArray readTasks(String user) {
-		String params = "users/" + user + ".json";
-		return getService(params);
-	}
-	/*
-	 * update an user task
-	 */
-	public void updateTask(String task, String taskId) {
-		JSONObject a = new JSONObject();
-		JSONObject tasks = new JSONObject();
-		try {
-			a.put("name", task);
-			tasks.put("task", a);
-		}
-		catch(JSONException e) {}
-		String address = "tasks/" + taskId + ".json";
-		putService(address, tasks);
-	}
-	/*
-	 * delete an user task
-	 */
-	public void deleteTask(String task) {
-		String params = "tasks/" + task + ".json";
-		deleteService(params);
-	}
 	/*
 	 *  access the web service and create new task
 	 */
-	public void postService(String address, JSONObject params) {
+	protected void postService(String address, JSONObject params) {
 		DefaultHttpClient httpclient = new DefaultHttpClient();
 		HttpPost httppost = new HttpPost(url + address);
 		try {
@@ -92,32 +41,29 @@ public class DataAccess {
 	/*
 	 *  access the web service and read tasks
 	 */
-	private JSONArray getService(String params) {
-		String result = "";
+	protected JSONArray getService(String params) {
 	    JSONArray array = null;
 		HttpClient httpclient = new DefaultHttpClient();
 		HttpGet httpget = new HttpGet(url + params);
 		try {
 	 		HttpResponse response = httpclient.execute(httpget);
-	 		String s = "";
+	 		String result = "";
 	 		String line = "";
 		 	BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
 	 		while ((line = rd.readLine()) != null) {
-	 			s += line;
+	 			result += line;
 	 		}
-	 		result = s;
+	 		array = new JSONArray(result);
 	 	}
-		catch(Exception e) {}
-		try {
-			array = new JSONArray(result);
-		}
+		catch(ClientProtocolException e) {}
 		catch(JSONException e) {}
+		catch(Exception e) {}
 		return array;
 	}
 	/*
 	 *  access the web service and update a task
 	 */
-	public void putService(String address, JSONObject params) {
+	protected void putService(String address, JSONObject params) {
 		DefaultHttpClient httpclient = new DefaultHttpClient();
 		HttpPut httpput = new HttpPut(url + address);
 		try {
@@ -133,7 +79,7 @@ public class DataAccess {
 	/*
 	 *  access the web service and delete one task
 	 */
-	private void deleteService(String params) {
+	protected void deleteService(String params) {
 		HttpClient httpclient = new DefaultHttpClient();
 		HttpDelete httpdelete = new HttpDelete(url + params);
 		try {

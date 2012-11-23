@@ -1,8 +1,5 @@
 <resources>
-
     <string name="app_name">ToDo</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="menu_settings">Settings</string>
     <string name="title_activity_main">ToDo</string>
     <string name="vs_ma_bn">New Task</string>
     <string name="create_success">Creado correctamete</string>
@@ -18,7 +15,9 @@
     <string name="accept">Aceptar</string>
     <string name="cancel">Cancelar</string>
     <string name="update_success">Actualizado correctamente</string>
-    <string name="tx_aa_bn">Accesar</string>
-    <string name="invalid_access">El usuario no existe</string>
-
+    <string name="tx_aa_bn">Access</string>
+    <string name="inexist_user">El usuario no existe</string>
+    <string name="required_user">Usuario requerido</string>
+    <string name="title_new">Nueva tarea</string>
+    <string name="require_field">Campo Requerido</string>
 </resources>
