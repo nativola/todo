@@ -7,8 +7,27 @@
   <%= csrf_meta_tags %>
 </head>
 <body>
-
-<%= yield %>
-
+	<div class="navbar">
+		<div class="navbar-inner">
+			<a id="text_nav_bar" class="brand" href="#"></a>
+		</div>
+    </div>
+    <div class="container-fluid">
+    <div class="row-fluid">
+    <div class="span2 well">
+		<ul class="nav nav-list">
+			<li class="nav-header">Users</li>
+			<li id="index_users"><%= link_to 'Users', User %></li>
+			<li id="new_user"><%= link_to 'New User', new_user_path %></li>
+			<li class="nav-header">Tasks</li>
+			<li id="index_tasks"><%= link_to 'Tasks', Task %></li>
+			<li id="new_task"><%= link_to 'New Task', new_task_path %></li>
+		</ul>
+    </div>
+    <div class="span10 well">
+		<%= yield %>
+    </div>
+    </div>
+    </div>
 </body>
 </html>
